@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hit the Box — Mini Game</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    text-align: center;
+    padding: 30px 20px 10px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 2.2em;
+    background: linear-gradient(90deg, #ff6b6b, #f2a541, #4ecdc4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header p {
+    color: #aaa;
+    margin-top: 8px;
+  }
+  #score {
+    font-size: 22px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  canvas {
+    background: #0f0f1e;
+    border: 3px solid #4a4e69;
+    border-radius: 10px;
+    touch-action: none;
+    box-shadow: 0 0 25px rgba(0,0,0,0.5);
+  }
+  #instructions {
+    margin: 14px 0 30px;
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    max-width: 400px;
+  }
+  footer {
+    margin-top: auto;
+    padding: 20px;
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <h1>🎯 Hit the Box</h1>
+    <p>A tiny bounce game. Guide the ball into the box.</p>
+  </header>
+
+  <div id="score">Score: 0</div>
+  <canvas id="game" width="400" height="500"></canvas>
+  <div id="instructions">Move your mouse or finger to slide the paddle. Bounce the ball into the orange box to score — it moves every time you hit it!</div>
+
+  <footer>Made with a canvas, a ball, and a little patience.</footer>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+
+let score = 0;
+
+let ball = { x: 200, y: 100, r: 10, dx: 3, dy: 3 };
+let paddle = { w: 80, h: 12, x: 160, y: 460 };
+let box = { x: 0, y: 0, w: 60, h: 30 };
+placeBox();
+
+function placeBox() {
+  box.x = Math.random() * (canvas.width - box.w);
+  box.y = 20;
+}
+
+function movePaddle(clientX) {
+  const rect = canvas.getBoundingClientRect();
+  let x = clientX - rect.left - paddle.w / 2;
+  x = Math.max(0, Math.min(canvas.width - paddle.w, x));
+  paddle.x = x;
+}
+
+canvas.addEventListener('mousemove', e => movePaddle(e.clientX));
+canvas.addEventListener('touchmove', e => {
+  movePaddle(e.touches[0].clientX);
+  e.preventDefault();
+}, { passive: false });
+
+function update() {
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) ball.dx *= -1;
+  if (ball.y - ball.r < 0) ball.dy *= -1;
+
+  if (
+    ball.y + ball.r > paddle.y &&
+    ball.y + ball.r < paddle.y + paddle.h &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.w &&
+    ball.dy > 0
+  ) {
+    ball.dy *= -1;
+    let hitPos = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+    ball.dx = hitPos * 4;
+  }
+
+  if (
+    ball.y - ball.r < box.y + box.h &&
+    ball.y + ball.r > box.y &&
+    ball.x > box.x &&
+    ball.x < box.x + box.w
+  ) {
+    score++;
+    scoreEl.textContent = 'Score: ' + score;
+    ball.dy *= -1;
+    placeBox();
+  }
+
+  if (ball.y - ball.r > canvas.height) {
+    ball.x = 200;
+    ball.y = 100;
+    ball.dx = 3;
+    ball.dy = 3;
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#f2a541';
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fill();
+  ctx.closePath();
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
